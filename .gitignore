@@ -1,3 +1,4 @@
 /target
 set-env.sh
 bac-bot-keypair.pem
+deploy.sh

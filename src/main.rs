@@ -112,7 +112,7 @@ fn check_stock() -> Result<(), NotificationNeeded> {
     }
 
     return Err(NotificationNeeded {
-        content: format!("Payload updated but looks like still not in stock, update expected payload to {:#?}", payload),
+        content: format!("Payload updated but looks like still not in stock, update the expected payload to {:#?}", payload),
         fatal: true
     });
 }
@@ -153,7 +153,7 @@ impl Twilio {
             .set("Authorization", &format!("Basic {}", auth))
             .send_form(form_params.as_slice())
             .map(|_response| {
-                eprintln!("HTTP call to Twilio API succeeded");
+                eprintln!("HTTP call to Twilio API succeeded, notification: {}", notification.content);
                 ()
             })
             .map_err(|err| {
