@@ -51,7 +51,7 @@ fn main() {
 
 fn check_stock() -> Result<(), NotificationNeeded> {
     let response = match ureq::get(DATA_URL)
-        .set("User-Agent", "EMotoBros Stock Checking Bot, 3 req/minute, contact ekardnt@ekardnt.com for problems")
+        .set("User-Agent", "EMotoBros Stock Checking Bot, 3 req/minute, contact ekardnt@ekardnt.com for problems, see https://github.com/EkardNT/bac-bot")
         .call() {
         Ok(response) => {
             if response.status() == 200 {
