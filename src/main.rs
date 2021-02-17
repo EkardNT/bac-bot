@@ -31,6 +31,7 @@ struct NotificationNeeded {
 }
 
 fn main() {
+    let twilio = Twilio::from_env();
     let mut limiter = ratelimit::Builder::new()
         .capacity(1)
         .quantum(1)
@@ -40,12 +41,12 @@ fn main() {
         limiter.wait();
         if let Err(notification) = check_stock() {
             let fatal = notification.fatal;
-            if send_notification(notification) && fatal {
+            if twilio.send(notification).is_ok() && fatal {
                 return;
             }
             std::thread::sleep(std::time::Duration::from_secs(60 * 2));
         }
-    }
+}
 }
 
 fn check_stock() -> Result<(), NotificationNeeded> {
@@ -116,7 +117,48 @@ fn check_stock() -> Result<(), NotificationNeeded> {
     });
 }
 
-fn send_notification(notification: NotificationNeeded) -> bool {
-    println!("{}", notification.content);
-    return true;
+struct Twilio {
+    twilio_sid: String,
+    twilio_auth_token: String,
+    twilio_source_phone: String,
+    twilio_destination_phone: String
+}
+
+impl Twilio {
+    fn from_env() -> Self {
+        let twilio_sid = std::env::var("TWILIO_SID")
+        .expect("TWILIO_SID environment variable not found");
+        let twilio_auth_token = std::env::var("TWILIO_AUTH_TOKEN")
+            .expect("TWILIO_AUTH_TOKEN environment variable not found");
+        let twilio_source_phone = std::env::var("TWILIO_SOURCE_PHONE")
+            .expect("TWILIO_SOURCE_PHONE environment variable not found");
+        let twilio_destination_phone = std::env::var("TWILIO_DESTINATION_PHONE")
+            .expect("TWILIO_DESTINATION_PHONE environment variable not found");
+        Self {
+            twilio_sid,
+            twilio_auth_token,
+            twilio_source_phone,
+            twilio_destination_phone
+        }
+    }
+
+    fn send(&self, notification: NotificationNeeded) -> Result<(), ()> {
+        let mut form_params: Vec<(&str, &str)> = Vec::with_capacity(3);
+        form_params.push(("Body", &notification.content));
+        form_params.push(("From", &self.twilio_source_phone));
+        form_params.push(("To", &self.twilio_destination_phone));
+        let url = format!("https://api.twilio.com/2010-04-01/Accounts/{}/Messages.json", self.twilio_sid);
+        let auth = base64::encode(format!("{}:{}", self.twilio_sid, self.twilio_auth_token));
+        ureq::post(&url)
+            .set("Authorization", &format!("Basic {}", auth))
+            .send_form(form_params.as_slice())
+            .map(|_response| {
+                eprintln!("HTTP call to Twilio API succeeded");
+                ()
+            })
+            .map_err(|err| {
+                eprintln!("HTTP call to Twilio API failed: {:?}", err);
+                ()
+            })
+    }
 }

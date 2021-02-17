@@ -4,6 +4,7 @@
 name = "bac-bot"
 version = "0.1.0"
 dependencies = [
+ "base64",
  "ratelimit",
  "serde",
  "serde_json",
